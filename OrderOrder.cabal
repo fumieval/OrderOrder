@@ -1,0 +1,41 @@
+cabal-version:      3.0
+name:               OrderOrder
+version:            0
+synopsis:           A GHC plugin to enforce isolation of module prefices
+
+-- A longer description of the package.
+description:        See README.md                                       .
+homepage:           https://github.com/fumieval/OrderOrder
+
+-- A URL where users can report bugs.
+-- bug-reports:
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             Fumiaki Kinoshita
+maintainer:         fumiexcel@gmail.com
+
+-- A copyright notice.
+copyright:          copyright (c) 2022 Fumiaki Kinoshita
+category:           Compiler Plugin
+extra-source-files: CHANGELOG.md, README.md
+
+source-repository head
+  type: git
+  location: https://github.com/fumieval/OrderOrder.git
+
+library
+    exposed-modules: OrderOrder
+    other-modules: PrefixMap
+    build-depends:
+        base ^>=4.16,
+        bytestring,
+        directory,
+        ghc,
+        split,
+        text,
+        unordered-containers,
+        containers,
+        yaml,
+    hs-source-dirs:   src
+    default-language: GHC2021
+    ghc-options: -Wall -Wcompat
