@@ -68,7 +68,7 @@ plugin = defaultPlugin
     dynFlags <- getDynFlags
     when (moduleName (tcg_mod tcGblEnv) == mainModuleNameIs dynFlags)
       $ liftIO
-      $ Yaml.encodeFile "import-stats.yaml"
+      $ Yaml.encodeFile summaryFileName
       $ summarise $ hsc_mod_graph env
 
     pure (tcGblEnv, ghcRn)
