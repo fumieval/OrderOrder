@@ -27,7 +27,7 @@ library
     exposed-modules: OrderOrder
     other-modules: PrefixMap
     build-depends:
-        base ^>=4.16,
+        base >=4.12 && <5,
         bytestring,
         directory,
         ghc,
@@ -37,5 +37,8 @@ library
         containers,
         yaml,
     hs-source-dirs:   src
-    default-language: GHC2021
+    default-language: Haskell2010
     ghc-options: -Wall -Wcompat
+    default-extensions:
+      ImportQualifiedPost
+      DeriveTraversable
