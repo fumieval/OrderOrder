@@ -14,33 +14,17 @@ Usage
 Add this option to your cabal file:
 
 ```
-  ghc-options: -fplugin=OrderOrder
+  ghc-options: -fplugin=OrderOrder -fplugin-opt=OrderOrder:export:summary
 ```
 
-It dumps the current module organisation to `import-summary.yaml` which looks like
+It dumps the current module organisation grouped by module prefices as well as a Dot representation for graphviz.
 
 ```yaml
-API:
+'':
 - Config
 - Domain
 - Env
 - Lib
-Config:
-- Lib.Types
-Domain:
-- Lib
-Env:
-- Config
-- Lib
-Lib:
-- Lib
 ```
 
-Subsequent compilations validate module dependencies using the generated file.
-
-```
-src/Lib/Violation.hs:3:1: error:
-    Lib.Violation imports Domain.Foo
-  |
-3 | import Domain.Foo
-```
+If there is one or more cyclic relationships among module prefices, it enumerates a [feedback arc set](https://en.wikipedia.org/wiki/Feedback_arc_set) in `summary.trims.txt`.
