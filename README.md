@@ -11,20 +11,10 @@ If this were violated, there would be no real distinction between Foo and Bar.
 Usage
 ----
 
-Add this option to your cabal file:
+Pass one or more source directories to OrderOrder:
 
-```
-  ghc-options: -fplugin=OrderOrder -fplugin-opt=OrderOrder:export:summary
-```
-
-It dumps the current module organisation grouped by module prefices as well as a Dot representation for graphviz.
-
-```yaml
-'':
-- Config
-- Domain
-- Env
-- Lib
+```sh
+orderorder /path/to/src
 ```
 
-If there is one or more cyclic relationships among module prefices, it enumerates a [feedback arc set](https://en.wikipedia.org/wiki/Feedback_arc_set) in `summary.trims.txt`.
+It enumerates a [feedback arc set](https://en.wikipedia.org/wiki/Feedback_arc_set) with respect to module prefices.

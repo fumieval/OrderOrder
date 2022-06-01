@@ -23,12 +23,13 @@ source-repository head
   type: git
   location: https://github.com/fumieval/OrderOrder.git
 
-library
-    exposed-modules: OrderOrder
+executable orderorder
+    main-is: OrderOrder.hs
     build-depends:
         base >=4.12 && <5,
         bytestring,
         directory,
+        filepath,
         ghc,
         split,
         text,
@@ -36,6 +37,7 @@ library
         containers,
         yaml,
         dotgen,
+        optparse-applicative,
     hs-source-dirs:   src
     default-language: Haskell2010
     ghc-options: -Wall -Wcompat

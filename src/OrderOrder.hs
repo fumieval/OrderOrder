@@ -2,57 +2,70 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
-module OrderOrder (plugin) where
+{-# LANGUAGE ApplicativeDo #-}
+module Main (main) where
 
 import Control.Monad
-import Control.Monad.IO.Class
-import Data.Graph qualified as G
+import Data.ByteString.Char8 qualified as B
 import Data.Foldable
-import Data.List (intercalate, stripPrefix, sortBy)
+import Data.List (intercalate, sortBy)
 import Data.List.Split (splitOn)
 import Data.Map.Strict qualified as M
 import Data.Ord (comparing)
 import Data.Set qualified as Set
 import Data.Yaml qualified as Yaml
+import Options.Applicative qualified as O
+import System.Directory
+import System.FilePath
 import Text.Dot qualified as Dot
 
-#if MIN_VERSION_ghc(9,0,0)
-import GHC.Plugins hiding ((<>))
-import GHC.Tc.Utils.Monad (getTopEnv)
-import GHC.Unit.Module.Graph
-#else
-import HscTypes
-import Module (moduleName, moduleNameString)
-import Plugins
-import SrcLoc (GenLocated(..))
-import TcRnMonad
-#endif
+enumSources :: FilePath -> IO [FilePath]
+enumSources path = do
+  isDir <- doesDirectoryExist path
+  if isDir
+    then do
+      paths <- listDirectory path
+      mconcat <$> traverse (\x -> map (x </>) <$> enumSources (path </> x)) paths
+    else pure [""]
 
-plugin :: Plugin
-plugin = defaultPlugin
-  { parsedResultAction = \_args _ pm -> pure pm
-  , pluginRecompile = flagRecompile
-  , typeCheckResultAction = \args _ tcGblEnv -> do
-    env <- getTopEnv
-    case args of
-      [stripPrefix "export:" -> Just path] -> liftIO $ do
-        let raw = dependencies $ hsc_mod_graph env
-        runOrderOrder path raw
-      [] -> pure ()
-      _ -> error "Usage: -fplugin-opt=OrderOrder:export:/path/to"
-    pure tcGblEnv
-  }
+extractImport :: [String] -> [String]
+extractImport ("import" : ('"' : _pkg) : "qualified" : name : _) = [name]
+extractImport ("import" : ('"' : _pkg) : name : _) = [name]
+extractImport ("import" : "qualified" : name : _) = [name]
+extractImport ("import" : name : _) = [name]
+extractImport _ = []
+
+getImports :: FilePath -> IO [String]
+getImports path = concatMap extractImport . map words . lines <$> readFile path
+
+getEntry :: FilePath -> FilePath -> IO Graph
+getEntry prefix path = do
+  let modName = intercalate "." $ splitOn "/" $ dropExtension path
+  imports <- getImports $ prefix </> path
+  pure $ M.singleton modName $ M.fromList [ (x, 1) | x <- imports ]
+
+-- drop external modules
+prune :: Graph -> Graph
+prune graph = M.filterWithKey (\k _ -> M.member k graph) <$> graph
+
+main :: IO ()
+main = join $ O.execParser $ flip O.info mempty $ do
+  dumpSummary <- O.switch $ O.long "summary" <> O.help "Dump summarised dependencies"
+  dumpDot <- O.switch $ O.long "dot" <> O.help "Dump dot representation of the summary"
+  dumpFAS <- O.switch $ O.long "fas" <> O.help "Dump a feedback arc set"
+  sourceDirs <- O.many $ O.strArgument $ O.metavar "DIR"
+  pure $ do
+    graph <- fmap mconcat $ forM sourceDirs $ \dir -> do
+      srcs <- enumSources dir
+      mconcat <$> traverse (getEntry dir) srcs
+    let pruned = prune graph
+    let summary = summarise pruned
+    when dumpSummary $ B.putStrLn $ Yaml.encode summary
+    when dumpDot $ putStrLn $ toDot summary
+    when dumpFAS $ putStr $ unlines $ suggestTrims pruned $ findFAS <$> summary
 
 type Graph = M.Map String (M.Map String Int)
 type Summary = M.Map String Graph
-
-runOrderOrder :: FilePath -> Graph -> IO ()
-runOrderOrder path raw = do
-  let summary = summarise raw
-  Yaml.encodeFile (path <> ".yaml") summary
-  writeFile (path <> ".dot") $ toDot summary
-  writeFile (path <> ".trims.txt")
-    $ unlines $ suggestTrims raw $ findFAS <$> summary
 
 relations :: [String] -> [String] -> [(String, String, [String])]
 relations [] _ = []
@@ -60,17 +73,6 @@ relations _ [] = []
 relations (x : xs) (y : ys)
   | x == y = fmap (x:) <$> relations xs ys
   | otherwise = [(x, y, [])]
-
-dependencies :: ModuleGraph -> Graph
-dependencies graph = M.fromListWith (<>)
-  [ (moduleNameString src, M.singleton (moduleNameString dst) 1)
-  | ms <- mgModSummaries graph
-  , let src = moduleName $ ms_mod ms
-  , (_, L _ dst) <- ms_textual_imps ms
-  , dst `Set.member` ourModules
-  ]
-  where
-    ourModules = Set.fromList $ moduleName . ms_mod <$> mgModSummaries graph
 
 summarise :: Graph -> Summary
 summarise graph = M.fromListWith (M.unionWith (M.unionWith (+)))
