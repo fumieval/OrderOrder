@@ -53,7 +53,7 @@ main = join $ O.execParser $ flip O.info mempty $ do
   dumpSummary <- O.switch $ O.long "summary" <> O.help "Dump summarised dependencies"
   dumpDot <- O.switch $ O.long "dot" <> O.help "Dump dot representation of the summary"
   dumpFAS <- O.switch $ O.long "fas" <> O.help "Dump a feedback arc set"
-  sourceDirs <- O.many $ O.strArgument $ O.metavar "DIR"
+  sourceDirs <- O.some $ O.strArgument $ O.metavar "DIR"
   pure $ do
     graph <- fmap mconcat $ forM sourceDirs $ \dir -> do
       srcs <- enumSources dir
