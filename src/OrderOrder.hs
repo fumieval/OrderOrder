@@ -42,7 +42,7 @@ getEntry :: FilePath -> FilePath -> IO Graph
 getEntry prefix path = do
   let modName = intercalate "." $ splitOn "/" $ dropExtension path
   imports <- getImports $ prefix </> path
-  pure $ M.singleton modName $ M.fromList [ (x, 1) | x <- imports ]
+  pure $ M.singleton modName $ M.fromList $ ("", 0) : [ (x, 1) | x <- imports ]
 
 -- drop external modules
 prune :: Graph -> Graph
