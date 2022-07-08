@@ -36,7 +36,7 @@ extractImport ("import" : name : _) = [name]
 extractImport _ = []
 
 getImports :: FilePath -> IO [String]
-getImports path = concatMap extractImport . map words . lines <$> readFile path
+getImports path = concatMap extractImport . map words . lines . B.unpack <$> B.readFile path
 
 getEntry :: FilePath -> FilePath -> IO Graph
 getEntry prefix path = do
