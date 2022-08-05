@@ -53,6 +53,7 @@ main = join $ O.execParser $ flip O.info mempty $ do
   dumpSummary <- O.switch $ O.long "summary" <> O.help "Dump summarised dependencies"
   dumpDot <- O.switch $ O.long "dot" <> O.help "Dump dot representation of the summary"
   dumpFAS <- O.switch $ O.long "fas" <> O.help "Dump a feedback arc set"
+  squashBelow <- O.option O.auto $ O.long "squash-below" <> O.metavar "N" <> O.help "collapse nodes deeper than N" <> O.value maxBound
   sourceDirs <- O.some $ O.strArgument $ O.metavar "DIR"
   _ <- O.helper
   pure $ do
@@ -60,7 +61,7 @@ main = join $ O.execParser $ flip O.info mempty $ do
       srcs <- enumSources dir
       mconcat <$> traverse (getEntry dir) srcs
     let pruned = prune graph
-    let summary = summarise pruned
+    let summary = summarise squashBelow pruned
     when dumpSummary $ B.putStrLn $ Yaml.encode summary
     when dumpDot $ putStrLn $ toDot summary
     when dumpFAS $ putStr $ unlines $ suggestTrims pruned $ findFAS <$> summary
@@ -75,12 +76,12 @@ relations (x : xs) (y : ys)
   | x == y = fmap (x:) <$> relations xs ys
   | otherwise = [(x, y, [])]
 
-summarise :: Graph -> Summary
-summarise graph = M.fromListWith (M.unionWith (M.unionWith (+)))
+summarise :: Int -> Graph -> Summary
+summarise squash graph = M.fromListWith (M.unionWith (M.unionWith (+)))
   [ el
   | (src, dsts) <- M.toList graph
   , (dst, weight) <- M.toList dsts
-  , (k, d, p) <- relations (splitOn "." src) (splitOn "." dst)
+  , (k, d, p) <- relations (take squash $ splitOn "." src) (take squash $ splitOn "." dst)
   , let prefix = intercalate "." p
   , el <- [(prefix, M.singleton k $ M.singleton d weight), (prefix, M.singleton d mempty)]
   ]
