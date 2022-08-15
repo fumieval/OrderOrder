@@ -25,7 +25,12 @@ source-repository head
 
 executable orderorder
     main-is: OrderOrder.hs
+    other-modules:
+        Graph
+        Parse
+        Types
     build-depends:
+        aeson,
         base >=4.12 && <5,
         bytestring,
         directory,
