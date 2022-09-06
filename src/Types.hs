@@ -5,7 +5,7 @@ import Data.Aeson (ToJSONKey(..))
 import Data.Map.Strict qualified as M
 import Data.List (intercalate)
 
-newtype ModuleName = ModuleName { getModuleName :: [String] } deriving (Eq, Ord, Show)
+newtype ModuleName = ModuleName { getModuleName :: [String] } deriving (Eq, Ord, Show, ToJSONKey)
 
 squash :: Int -> ModuleName -> ModuleName
 squash i = ModuleName . drop i . getModuleName
