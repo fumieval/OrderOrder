@@ -8,7 +8,7 @@ import Data.List (intercalate)
 newtype ModuleName = ModuleName { getModuleName :: [String] } deriving (Eq, Ord, Show, ToJSONKey)
 
 squash :: Int -> ModuleName -> ModuleName
-squash i = ModuleName . drop i . getModuleName
+squash i = ModuleName . take i . getModuleName
 
 render :: ModuleName -> String
 render = intercalate "." . getModuleName
