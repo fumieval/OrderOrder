@@ -57,9 +57,9 @@ findFAS graph = snd $ foldl' step (mempty, mempty) allEdges
       ]
 
 -- Instantiate concrete module names from the given FAS
-suggestTrims :: Graph ModuleName -> M.Map Prefix (Graph Fragment) -> [String]
-suggestTrims rawGraph trimMap =
-  [ unwords [render src, "->", render dst]
+suggestTrims :: Graph ModuleName -> M.Map Prefix (Graph Fragment) -> Graph ModuleName
+suggestTrims rawGraph trimMap = M.fromList
+  [ (src, M.singleton dst 1)
   | (src, dsts) <- M.toList rawGraph
   , dst <- M.keys dsts
   , (k, d, prefix) <- relations src dst
@@ -68,16 +68,22 @@ suggestTrims rawGraph trimMap =
   , M.member d ds
   ]
 
-cluster :: Graph Fragment -> Dot.Dot ()
-cluster group = do
-  nodes <- M.traverseWithKey (\(Fragment k) vs -> (,) vs <$> Dot.node [("label", k)]) group
-  forM_ (M.elems nodes) $ \(vs, node) -> do
+cluster :: Ord a => (a -> String) -> Graph a -> Dot.Dot ()
+cluster key group = do
+  nodes <- sequence $ M.fromList
+    [ (k, Dot.node [("label", key k)])
+    | k <- M.keys group ++ foldMap M.keys (M.elems group)
+    ]
+  forM_ (M.toList group) $ \(k, vs) -> do
     forM_ (M.toList vs) $ \(v, weight) -> forM_ (M.lookup v nodes)
-      $ \(_, n') -> Dot.edge node n' [("weight", show weight), ("label", show weight)]
+      $ \n' -> Dot.edge (nodes M.! k) n' [("weight", show weight), ("label", show weight)]
 
-toDot :: Summary -> String
-toDot summary = Dot.showDot $ do
+summaryToDot :: Summary -> Dot.Dot ()
+summaryToDot summary = forM_ (M.toList summary) $ \(Prefix prefix, group) -> Dot.cluster $ do
+  Dot.attribute ("label", prefix)
+  cluster getFragment group
+
+showDot' :: Dot.Dot () -> String
+showDot' dot = Dot.showDot $ do
   Dot.attribute ("rankdir", "LR")
-  forM_ (M.toList summary) $ \(Prefix prefix, group) -> Dot.cluster $ do
-    Dot.attribute ("label", prefix)
-    cluster group
+  dot
