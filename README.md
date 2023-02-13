@@ -1,7 +1,7 @@
 OrderOrder
 ----
 
-OrderOrder is a GHC plugin that prevents jumbling of module prefices, namely:
+OrderOrder is an application that prevents jumbling of module prefices.
 
 * If Foo.X imports Bar.Y
 * None of Bar.P imports Foo.Q
@@ -17,4 +17,4 @@ Pass one or more source directories to OrderOrder:
 orderorder /path/to/src
 ```
 
-It enumerates a [feedback arc set](https://en.wikipedia.org/wiki/Feedback_arc_set) with respect to module prefices.
+It enumerates a [feedback arc set](https://en.wikipedia.org/wiki/Feedback_arc_set) with respect to module prefices. The feedback arc set can be thought of as exception rules with respect to dependencies.
