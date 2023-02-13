@@ -2,6 +2,8 @@ OrderOrder
 ----
 
 OrderOrder is an application that prevents jumbling of module prefices.
+This is based on a hypothesis that module prefices should ideally form a directed acyclic graph given a notion of
+dependencies between module prefices; that is, a module prefix depends on another module prefix if one of the children depends on any other child of the other module prefix.
 
 * If Foo.X imports Bar.Y
 * None of Bar.P imports Foo.Q
